@@ -1,5 +1,13 @@
 <mat-toolbar color="primary">
   <span>{{ title }}</span>
+  <span class="spacer"></span>
+  @if (authService.currentUser(); as user) {
+    <span class="user-info">{{ user.firstName }} {{ user.lastName }} &middot; {{ user.role }}</span>
+    <button mat-button (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      Logout
+    </button>
+  }
 </mat-toolbar>
 
 <main class="app-content">

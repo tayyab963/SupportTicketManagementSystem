@@ -1,11 +1,21 @@
 using System.Text;
+using System.Text.Json.Serialization;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using SupportTicketSystem.API.Common;
+using SupportTicketSystem.API.Middleware;
 using SupportTicketSystem.Application;
+using SupportTicketSystem.Application.Common.Interfaces;
 using SupportTicketSystem.Application.Common.Models;
 using SupportTicketSystem.Infrastructure;
+using SupportTicketSystem.Infrastructure.Persistence;
+using SupportTicketSystem.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +26,31 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
 const string AngularClientCorsPolicy = "AngularClient";
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Enums travel over the wire as strings ("Admin", "Open", ...) to match the Angular string enums.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
+
+// Model-binding/FluentValidation failures are reshaped into the same ApiResponse envelope as every other response.
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(kvp => kvp.Value is { Errors.Count: > 0 })
+            .ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+
+        return new BadRequestObjectResult(ApiResponse<object>.Fail("Validation failed.", errors));
+    };
+});
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -56,6 +89,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddCors(options =>
 {
@@ -67,17 +101,23 @@ builder.Services.AddCors(options =>
     });
 });
 
-var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
-    ?? throw new InvalidOperationException("Jwt configuration section is missing.");
-
 builder.Services
     .AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
-    .AddJwtBearer(options =>
+    .AddJwtBearer();
+
+// Bound from IOptions<JwtSettings> (resolved from DI, not read directly off builder.Configuration)
+// so JwtBearerOptions are only materialized once the full configuration — including anything an
+// integration test's WebApplicationFactory layers on afterwards — is finalized.
+builder.Services
+    .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtSettings>>((options, jwtSettingsOptions) =>
     {
+        var jwtSettings = jwtSettingsOptions.Value;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -88,6 +128,25 @@ builder.Services
             ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
             ClockSkew = TimeSpan.Zero
+        };
+
+        // Keep 401/403 bodies consistent with the ApiResponse envelope used everywhere else,
+        // instead of the empty bodies ASP.NET Core's JWT bearer handler returns by default.
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("Authentication required."));
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("You do not have permission to perform this action."));
+            }
         };
     });
 
@@ -102,9 +161,22 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "Support Ticket Management System API v1");
     });
+
+    // Convenience for local development only: applies pending migrations and seeds the five
+    // documented dev accounts (see README "Seed Accounts"). Guarded to Development so `dotnet test`
+    // (which runs the API host under the "Testing" environment — see CustomWebApplicationFactory)
+    // never touches a real database.
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    await DbSeeder.SeedAsync(db, passwordHasher, app.Logger);
 }
 
 app.UseSerilogRequestLogging();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 

@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace SupportTicketSystem.Domain.Enums;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TicketStatus
 {
     Open = 1,
