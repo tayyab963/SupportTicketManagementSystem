@@ -22,6 +22,7 @@ import { UserRole } from '../../../../core/models/enums';
 import { PagedResult } from '../../../../core/models/paged-result.model';
 import { UserListItem, UserQueryParams } from '../../../../core/models/user.model';
 import { UserFormDialogComponent } from '../../components/user-form-dialog/user-form-dialog.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 type ActiveFilter = 'all' | 'active' | 'inactive';
 
@@ -285,12 +286,26 @@ export class UserListComponent implements OnInit {
   }
 
   protected deactivate(user: UserListItem): void {
-    this.userService.deactivateUser(user.id).subscribe({
-      next: () => {
-        this.snackBar.open(`${user.firstName} ${user.lastName} deactivated.`, 'Dismiss', { duration: 3000 });
-        this.refresh();
-      },
-      error: (error: HttpErrorResponse) => this.showError(error)
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Deactivate user',
+        message: `Deactivate ${user.firstName} ${user.lastName}? They will no longer be able to log in.`,
+        confirmLabel: 'Deactivate'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.userService.deactivateUser(user.id).subscribe({
+        next: () => {
+          this.snackBar.open(`${user.firstName} ${user.lastName} deactivated.`, 'Dismiss', { duration: 3000 });
+          this.refresh();
+        },
+        error: (error: HttpErrorResponse) => this.showError(error)
+      });
     });
   }
 
@@ -315,7 +330,10 @@ export class UserListComponent implements OnInit {
         this.results.set(result);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false)
+      error: (error: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.showError(error);
+      }
     });
   }
 }

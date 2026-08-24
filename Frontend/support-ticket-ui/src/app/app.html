@@ -1,4 +1,30 @@
 <mat-toolbar color="primary">
+  @if (authService.isAuthenticated()) {
+    <button mat-icon-button [matMenuTriggerFor]="navMenu" aria-label="Navigation menu">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <mat-menu #navMenu="matMenu">
+      <a mat-menu-item routerLink="/tickets" routerLinkActive="active-menu-item">
+        <mat-icon>confirmation_number</mat-icon>
+        Tickets
+      </a>
+      @if (authService.hasRole(UserRole.Admin)) {
+        <a mat-menu-item routerLink="/dashboard" routerLinkActive="active-menu-item">
+          <mat-icon>dashboard</mat-icon>
+          Dashboard
+        </a>
+        <a mat-menu-item routerLink="/users" routerLinkActive="active-menu-item">
+          <mat-icon>group</mat-icon>
+          Users
+        </a>
+      }
+      <a mat-menu-item routerLink="/profile" routerLinkActive="active-menu-item">
+        <mat-icon>person</mat-icon>
+        Profile
+      </a>
+    </mat-menu>
+  }
+
   <span>{{ title }}</span>
   <span class="spacer"></span>
   @if (authService.currentUser(); as user) {

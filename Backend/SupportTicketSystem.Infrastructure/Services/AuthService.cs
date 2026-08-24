@@ -25,7 +25,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
 
         if (user is null || !_passwordHasher.Verify(user.PasswordHash, request.Password))
         {
@@ -69,7 +69,7 @@ public class AuthService : IAuthService
 
     public async Task<UserSummaryDto> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var user = await _db.Users.FindAsync([userId], cancellationToken)
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
             ?? throw new NotFoundException("User not found.");
 
         return MapToSummary(user);

@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -11,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
@@ -43,7 +45,8 @@ interface SortOption {
     MatTableModule,
     MatPaginatorModule,
     MatProgressBarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSnackBarModule
   ],
   template: `
     <mat-card class="list-card">
@@ -236,6 +239,7 @@ export class TicketListComponent implements OnInit {
   private readonly ticketService = inject(TicketService);
   private readonly userService = inject(UserService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected readonly statusOptions = Object.values(TicketStatus);
   protected readonly priorityOptions = Object.values(TicketPriority);
@@ -344,7 +348,11 @@ export class TicketListComponent implements OnInit {
         this.results.set(result);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false)
+      error: (error: HttpErrorResponse) => {
+        this.loading.set(false);
+        const message = (error.error as { message?: string } | undefined)?.message ?? 'Could not load tickets.';
+        this.snackBar.open(message, 'Dismiss', { duration: 4000 });
+      }
     });
   }
 }

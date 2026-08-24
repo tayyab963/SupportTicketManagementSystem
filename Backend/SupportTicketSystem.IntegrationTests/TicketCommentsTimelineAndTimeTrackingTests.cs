@@ -243,6 +243,25 @@ public class TicketCommentsTimelineAndTimeTrackingTests : IClassFixture<CustomWe
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    [Fact]
+    public async Task UnassignedAgent_CannotAddTimeEntry_Returns403()
+    {
+        var (ownerToken, _) = await RegisterCustomerAsync(_factory, "time-unassigned-owner");
+        var ticketId = await CreateTicketAsync(_factory, ownerToken);
+
+        var (agentToken, _) = await CreateStaffUserDirectlyAsync(_factory, UserRole.SupportAgent, "time-unassigned-agent");
+        var agentClient = TestClients.WithBearerToken(_factory, agentToken);
+
+        var response = await agentClient.PostAsJsonAsync($"/api/tickets/{ticketId}/time-entries", new CreateTimeEntryRequest
+        {
+            WorkDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            DurationMinutes = 30,
+            Description = "I'm not assigned to this ticket."
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-15)]

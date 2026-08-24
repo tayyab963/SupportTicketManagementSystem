@@ -4,11 +4,13 @@ import { Component, OnInit, ViewChild, WritableSignal, computed, inject, signal 
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiErrorResponse } from '../../../../core/models/api-response.model';
 import { TicketPriority, TicketStatus, UserRole } from '../../../../core/models/enums';
@@ -17,6 +19,7 @@ import { UserSummary } from '../../../../core/models/user.model';
 import { AuthService } from '../../../../core/services/auth.service';
 import { TicketService } from '../../../../core/services/ticket.service';
 import { UserService } from '../../../../core/services/user.service';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ActivityTimelineComponent } from '../../components/activity-timeline/activity-timeline.component';
 import { CommentsSectionComponent } from '../../components/comments-section/comments-section.component';
 import { TimeTrackingComponent } from '../../components/time-tracking/time-tracking.component';
@@ -34,8 +37,10 @@ const UNASSIGNED = '__unassigned__';
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatDialogModule,
     MatDividerModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     MatTooltipModule,
     ActivityTimelineComponent,
     CommentsSectionComponent,
@@ -253,6 +258,8 @@ export class TicketDetailComponent implements OnInit {
   private readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   @ViewChild('timeline') private timelineComponent?: ActivityTimelineComponent;
 
@@ -387,13 +394,35 @@ export class TicketDetailComponent implements OnInit {
       return;
     }
 
+    if (status === TicketStatus.Closed) {
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'Close ticket',
+          message: 'Closing this ticket is final — it cannot be reopened afterwards. Continue?',
+          confirmLabel: 'Close ticket'
+        }
+      });
+
+      dialogRef.afterClosed().subscribe((confirmed) => {
+        if (confirmed) {
+          this.performStatusChange(ticket.id, status);
+        }
+      });
+      return;
+    }
+
+    this.performStatusChange(ticket.id, status);
+  }
+
+  private performStatusChange(ticketId: string, status: TicketStatus): void {
     this.statusSubmitting.set(true);
     this.actionError.set(null);
-    this.ticketService.changeStatus(ticket.id, { status }).subscribe({
+    this.ticketService.changeStatus(ticketId, { status }).subscribe({
       next: (updated) => {
         this.applyTicket(updated);
         this.statusSubmitting.set(false);
         this.timelineComponent?.reload();
+        this.snackBar.open(`Status updated to ${status}.`, 'Dismiss', { duration: 3000 });
       },
       error: (error: HttpErrorResponse) => this.handleActionError(error, this.statusSubmitting)
     });
@@ -413,6 +442,7 @@ export class TicketDetailComponent implements OnInit {
         this.applyTicket(updated);
         this.prioritySubmitting.set(false);
         this.timelineComponent?.reload();
+        this.snackBar.open(`Priority updated to ${priority}.`, 'Dismiss', { duration: 3000 });
       },
       error: (error: HttpErrorResponse) => this.handleActionError(error, this.prioritySubmitting)
     });
@@ -432,6 +462,7 @@ export class TicketDetailComponent implements OnInit {
         this.applyTicket(updated);
         this.assignSubmitting.set(false);
         this.timelineComponent?.reload();
+        this.snackBar.open('Assignment updated.', 'Dismiss', { duration: 3000 });
       },
       error: (error: HttpErrorResponse) => this.handleActionError(error, this.assignSubmitting)
     });

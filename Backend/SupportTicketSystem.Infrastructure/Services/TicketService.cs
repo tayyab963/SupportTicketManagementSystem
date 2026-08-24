@@ -99,16 +99,30 @@ public class TicketService : ITicketService
 
         var totalCount = await tickets.CountAsync(cancellationToken);
 
+        // Projected straight to the DTO inside the IQueryable pipeline (no .Include()) so the
+        // database returns only the columns the list view needs, not full Customer/AssignedAgent
+        // rows (which would otherwise carry PasswordHash and every other user column per page row).
         var pageItems = await tickets
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Include(t => t.Customer)
-            .Include(t => t.AssignedAgent)
+            .Select(t => new TicketListItemDto
+            {
+                Id = t.Id,
+                TicketNumber = t.TicketNumber,
+                Title = t.Title,
+                Status = t.Status,
+                Priority = t.Priority,
+                CustomerId = t.CustomerId,
+                CustomerName = t.Customer.FirstName + " " + t.Customer.LastName,
+                AssignedAgentId = t.AssignedAgentId,
+                AssignedAgentName = t.AssignedAgent == null ? null : t.AssignedAgent.FirstName + " " + t.AssignedAgent.LastName,
+                CreatedAt = t.CreatedAt
+            })
             .ToListAsync(cancellationToken);
 
         return new PagedResult<TicketListItemDto>
         {
-            Items = pageItems.Select(MapToListItem).ToList(),
+            Items = pageItems,
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalCount = totalCount
@@ -140,11 +154,16 @@ public class TicketService : ITicketService
                 });
             }
 
-            var targetCustomer = await _db.Users
-                .FirstOrDefaultAsync(u => u.Id == request.CustomerId && u.Role == UserRole.Customer, cancellationToken)
-                ?? throw new NotFoundException("Target customer not found.");
+            var customerExists = await _db.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.Id == request.CustomerId && u.Role == UserRole.Customer, cancellationToken);
 
-            customerId = targetCustomer.Id;
+            if (!customerExists)
+            {
+                throw new NotFoundException("Target customer not found.");
+            }
+
+            customerId = request.CustomerId.Value;
         }
         else
         {
@@ -264,7 +283,10 @@ public class TicketService : ITicketService
         if (request.AgentId is { } agentId)
         {
             var agent = await _db.Users
-                .FirstOrDefaultAsync(u => u.Id == agentId && u.Role == UserRole.SupportAgent && u.IsActive, cancellationToken);
+                .AsNoTracking()
+                .Where(u => u.Id == agentId && u.Role == UserRole.SupportAgent && u.IsActive)
+                .Select(u => new { u.FirstName, u.LastName })
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (agent is null)
             {
@@ -422,10 +444,9 @@ public class TicketService : ITicketService
             })
             .ToListAsync(cancellationToken);
 
-        // SUM computed by the database, not by summing the projected DTOs in memory.
-        var totalDurationMinutes = await _db.TimeEntries
-            .Where(te => te.TicketId == ticketId)
-            .SumAsync(te => te.DurationMinutes, cancellationToken);
+        // Summed from the already-materialized (small, per-ticket) list rather than issuing a second
+        // round trip for a SUM the database has already effectively computed once here.
+        var totalDurationMinutes = entries.Sum(e => e.DurationMinutes);
 
         return new TimeEntrySummaryDto
         {
@@ -459,12 +480,19 @@ public class TicketService : ITicketService
 
     private async Task<Ticket> LoadScopedTicketWithDetailsAsync(Guid ticketId, CancellationToken cancellationToken)
     {
-        var ticket = await ApplyDetailVisibilityScope(_db.Tickets.AsNoTracking())
+        IQueryable<Ticket> query = ApplyDetailVisibilityScope(_db.Tickets.AsNoTracking())
             .Include(t => t.Customer)
             .Include(t => t.AssignedAgent)
-            .Include(t => t.Comments).ThenInclude(c => c.User)
-            .Include(t => t.TimeEntries).ThenInclude(te => te.User)
-            .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
+            .Include(t => t.Comments).ThenInclude(c => c.User);
+
+        // TimeEntries are staff-only (see MapToDetail) and never read for a Customer caller, so skip
+        // the extra join/hydration entirely rather than loading and then discarding it.
+        if (_currentUser.Role != UserRole.Customer)
+        {
+            query = query.Include(t => t.TimeEntries).ThenInclude(te => te.User);
+        }
+
+        var ticket = await query.FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
 
         // A ticket that truly doesn't exist and one that exists but is outside this caller's scope
         // (e.g. another customer's ticket) are indistinguishable here by design.
@@ -637,17 +665,4 @@ public class TicketService : ITicketService
         };
     }
 
-    private static TicketListItemDto MapToListItem(Ticket ticket) => new()
-    {
-        Id = ticket.Id,
-        TicketNumber = ticket.TicketNumber,
-        Title = ticket.Title,
-        Status = ticket.Status,
-        Priority = ticket.Priority,
-        CustomerId = ticket.CustomerId,
-        CustomerName = $"{ticket.Customer.FirstName} {ticket.Customer.LastName}",
-        AssignedAgentId = ticket.AssignedAgentId,
-        AssignedAgentName = ticket.AssignedAgent is null ? null : $"{ticket.AssignedAgent.FirstName} {ticket.AssignedAgent.LastName}",
-        CreatedAt = ticket.CreatedAt
-    };
 }

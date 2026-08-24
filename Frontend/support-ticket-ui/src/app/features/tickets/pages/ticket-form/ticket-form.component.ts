@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiErrorResponse } from '../../../../core/models/api-response.model';
 import { TicketPriority } from '../../../../core/models/enums';
 import { TicketService } from '../../../../core/services/ticket.service';
@@ -22,7 +23,8 @@ import { TicketService } from '../../../../core/services/ticket.service';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatSnackBarModule
   ],
   template: `
     <mat-card class="form-card">
@@ -94,6 +96,7 @@ export class TicketFormComponent implements OnInit {
   private readonly ticketService = inject(TicketService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected readonly priorityOptions = Object.values(TicketPriority);
   protected readonly ticketId = signal<string | null>(null);
@@ -140,8 +143,12 @@ export class TicketFormComponent implements OnInit {
       ? this.ticketService.updateTicket(id, { title, description })
       : this.ticketService.createTicket({ title, description, priority });
 
+    const wasEdit = !!id;
     request$.subscribe({
-      next: (ticket) => void this.router.navigate(['/tickets', ticket.id]),
+      next: (ticket) => {
+        this.snackBar.open(wasEdit ? 'Ticket updated.' : 'Ticket created.', 'Dismiss', { duration: 3000 });
+        void this.router.navigate(['/tickets', ticket.id]);
+      },
       error: (error: HttpErrorResponse) => {
         this.isSubmitting.set(false);
         const body = error.error as ApiErrorResponse | undefined;

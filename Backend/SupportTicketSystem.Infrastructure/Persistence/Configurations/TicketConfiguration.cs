@@ -27,6 +27,7 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.Priority);
         builder.HasIndex(t => t.CreatedAt);
+        builder.HasIndex(t => t.UpdatedAt);
 
         builder.HasMany(t => t.Comments)
             .WithOne(c => c.Ticket)

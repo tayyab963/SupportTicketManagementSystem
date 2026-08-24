@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApiErrorResponse } from '../../../../core/models/api-response.model';
 import { CommentItem } from '../../../../core/models/ticket.model';
 import { TicketService } from '../../../../core/services/ticket.service';
@@ -18,7 +19,7 @@ import { TicketService } from '../../../../core/services/ticket.service';
 @Component({
   selector: 'app-comments-section',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule],
+  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule, MatSnackBarModule],
   template: `
     <section class="comments-section">
       <h3>Comments</h3>
@@ -76,6 +77,7 @@ import { TicketService } from '../../../../core/services/ticket.service';
 export class CommentsSectionComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly ticketService = inject(TicketService);
+  private readonly snackBar = inject(MatSnackBar);
 
   @Input({ required: true }) ticketId!: string;
   @Input() canComment = false;
@@ -118,6 +120,7 @@ export class CommentsSectionComponent implements OnInit, OnChanges {
         this.submitting.set(false);
         this.load();
         this.commentAdded.emit();
+        this.snackBar.open('Comment posted.', 'Dismiss', { duration: 3000 });
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

@@ -178,7 +178,12 @@ app.UseSerilogRequestLogging();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseHttpsRedirection();
+// Deliberately no UseHttpsRedirection(): the Angular dev build always calls the plain-HTTP port
+// (see environment.development.ts). When the API happens to be launched with the "https" profile
+// (both ports configured — see launchSettings.json), an unconditional redirect here sends every
+// request to the HTTPS port instead, which breaks the CORS preflight for that cross-port redirect
+// and makes every API call — including login — fail from the browser with no useful error message.
+// HTTPS termination for a real deployment belongs to the reverse proxy in front of Kestrel, not here.
 
 app.UseCors(AngularClientCorsPolicy);
 

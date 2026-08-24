@@ -7,6 +7,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiErrorResponse } from '../../../../core/models/api-response.model';
 import { TimeEntrySummary, formatDuration } from '../../../../core/models/ticket.model';
@@ -28,6 +29,7 @@ import { TicketService } from '../../../../core/services/ticket.service';
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
     MatTooltipModule
   ],
   template: `
@@ -108,6 +110,7 @@ import { TicketService } from '../../../../core/services/ticket.service';
 export class TimeTrackingComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly ticketService = inject(TicketService);
+  private readonly snackBar = inject(MatSnackBar);
 
   @Input({ required: true }) ticketId!: string;
   @Input() canLogTime = false;
@@ -156,6 +159,7 @@ export class TimeTrackingComponent implements OnInit, OnChanges {
         this.submitting.set(false);
         this.load();
         this.timeEntryAdded.emit();
+        this.snackBar.open('Time entry logged.', 'Dismiss', { duration: 3000 });
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

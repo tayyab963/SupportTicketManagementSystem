@@ -58,6 +58,17 @@ public class UserManagementTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetAgents_Customer_Returns403()
+    {
+        var (customerToken, _) = await RegisterCustomerAsync(_factory, "agents-customer");
+        var client = TestClients.WithBearerToken(_factory, customerToken);
+
+        var response = await client.GetAsync("/api/users/agents");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task GetUsers_Admin_ReturnsPagedResults_AndNeverSerializesPasswordHash()
     {
         var (adminToken, _) = await CreateStaffUserDirectlyAsync(_factory, UserRole.Admin, "users-list-admin");

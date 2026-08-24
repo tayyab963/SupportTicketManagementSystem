@@ -4,7 +4,9 @@ import { roleGuard } from './core/guards/role.guard';
 import { UserRole } from './core/models/enums';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  // 'tickets' (not 'dashboard') is the universal landing page — Customer, SupportAgent and Admin can
+  // all use it, whereas the dashboard below is Admin-only and would otherwise bounce every other role.
+  { path: '', pathMatch: 'full', redirectTo: 'tickets' },
   {
     path: 'login',
     canActivate: [guestGuard],
@@ -13,7 +15,8 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: [UserRole.Admin] },
     loadComponent: () =>
       import('./features/dashboard/pages/dashboard/dashboard.component').then((m) => m.DashboardComponent)
   },
@@ -35,5 +38,5 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/profile/pages/profile/profile.component').then((m) => m.ProfileComponent)
   },
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '**', redirectTo: 'tickets' }
 ];

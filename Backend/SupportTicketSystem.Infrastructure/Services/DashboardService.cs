@@ -48,20 +48,35 @@ public class DashboardService : IDashboardService
             ? 0d
             : Math.Round(resolutionSpans.Average(s => (s.ResolvedAt - s.CreatedAt).TotalMinutes), 2);
 
-        var agentWorkload = await _db.Users
+        // A single grouped pass over Tickets (one scan) joined in memory against the small agent
+        // roster, instead of four correlated Count() subqueries re-scanning Tickets per agent.
+        var ticketCountsByAgentAndStatus = await _db.Tickets
+            .AsNoTracking()
+            .Where(t => t.AssignedAgentId != null)
+            .GroupBy(t => new { t.AssignedAgentId, t.Status })
+            .Select(g => new { g.Key.AssignedAgentId, g.Key.Status, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var agents = await _db.Users
             .AsNoTracking()
             .Where(u => u.Role == UserRole.SupportAgent)
             .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
-            .Select(u => new AgentWorkloadDto
-            {
-                AgentId = u.Id,
-                AgentName = u.FirstName + " " + u.LastName,
-                TotalAssigned = u.TicketsAsAgent.Count(),
-                Open = u.TicketsAsAgent.Count(t => t.Status == TicketStatus.Open),
-                InProgress = u.TicketsAsAgent.Count(t => t.Status == TicketStatus.InProgress),
-                Resolved = u.TicketsAsAgent.Count(t => t.Status == TicketStatus.Resolved)
-            })
+            .Select(u => new { u.Id, Name = u.FirstName + " " + u.LastName })
             .ToListAsync(cancellationToken);
+
+        var agentWorkload = agents.Select(agent =>
+        {
+            var counts = ticketCountsByAgentAndStatus.Where(c => c.AssignedAgentId == agent.Id).ToList();
+            return new AgentWorkloadDto
+            {
+                AgentId = agent.Id,
+                AgentName = agent.Name,
+                TotalAssigned = counts.Sum(c => c.Count),
+                Open = counts.Where(c => c.Status == TicketStatus.Open).Sum(c => c.Count),
+                InProgress = counts.Where(c => c.Status == TicketStatus.InProgress).Sum(c => c.Count),
+                Resolved = counts.Where(c => c.Status == TicketStatus.Resolved).Sum(c => c.Count)
+            };
+        }).ToList();
 
         return new DashboardSummaryDto
         {

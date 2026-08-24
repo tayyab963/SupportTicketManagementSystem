@@ -19,5 +19,7 @@ export const roleGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  return router.createUrlTree(['/dashboard']);
+  // Redirects to 'tickets', not 'dashboard' — 'tickets' is reachable by every role, so this can never
+  // bounce back into another role check and loop (unlike 'dashboard', which is itself Admin-gated).
+  return router.createUrlTree(['/tickets']);
 };
