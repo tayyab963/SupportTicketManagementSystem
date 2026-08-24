@@ -1,13 +1,12 @@
-using SupportTicketSystem.Domain.Enums;
-
 namespace SupportTicketSystem.Application.Tickets.Dtos;
 
+/// <summary>
+/// Basic ticket edit (title/description only). Priority and assignment each have their own dedicated
+/// endpoint/DTO (ChangeTicketPriorityRequest, AssignTicketRequest) so those actions can be
+/// independently authorized (Admin-only) instead of riding along with a general-purpose edit.
+/// </summary>
 public class UpdateTicketRequest
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public TicketPriority Priority { get; set; }
-
-    /// <summary>Ignored when the caller is a Customer — only Agents/Admins may reassign a ticket.</summary>
-    public Guid? AssignedAgentId { get; set; }
 }

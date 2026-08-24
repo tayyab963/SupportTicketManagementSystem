@@ -113,14 +113,22 @@ public class TicketIsolationTests : IClassFixture<CustomWebApplicationFactory>
         (await client.PutAsJsonAsync($"/api/tickets/{ticketId}", new UpdateTicketRequest
         {
             Title = "Cannot log in (updated)",
-            Description = "Still broken after clearing cookies.",
-            Priority = TicketPriority.High
+            Description = "Still broken after clearing cookies."
         })).StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await client.PostAsJsonAsync($"/api/tickets/{ticketId}/comments", new CreateCommentRequest
         {
             CommentText = "Any update on this?"
         })).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // A customer can only close a *resolved* ticket (see TicketService.EnsureCallerCanChangeStatus) —
+        // drive it there via staff first, then confirm the owning customer can close it themselves.
+        var (staffToken, _) = await CreateStaffUserDirectlyAsync(UserRole.Admin, "owner-control-staff");
+        var staffClient = TestClients.WithBearerToken(_factory, staffToken);
+        (await staffClient.PostAsJsonAsync($"/api/tickets/{ticketId}/status", new ChangeTicketStatusRequest { Status = TicketStatus.InProgress }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (await staffClient.PostAsJsonAsync($"/api/tickets/{ticketId}/status", new ChangeTicketStatusRequest { Status = TicketStatus.Resolved }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await client.PostAsJsonAsync($"/api/tickets/{ticketId}/status", new ChangeTicketStatusRequest
         {
@@ -154,8 +162,7 @@ public class TicketIsolationTests : IClassFixture<CustomWebApplicationFactory>
         var response = await attackerClient.PutAsJsonAsync($"/api/tickets/{ticketId}", new UpdateTicketRequest
         {
             Title = "Hijacked title",
-            Description = "Hijacked description",
-            Priority = TicketPriority.Low
+            Description = "Hijacked description"
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -228,14 +235,15 @@ public class TicketIsolationTests : IClassFixture<CustomWebApplicationFactory>
         var updateResponse = await agentClient.PutAsJsonAsync($"/api/tickets/{ticketId}", new UpdateTicketRequest
         {
             Title = "Reassigned to myself",
-            Description = "Sneaky update",
-            Priority = TicketPriority.Critical
+            Description = "Sneaky update"
         });
         updateResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
+        // InProgress is a legal next state from Open — this isolates the assertion to the
+        // assignment check rather than tripping the status state-machine validation instead.
         var statusResponse = await agentClient.PostAsJsonAsync($"/api/tickets/{ticketId}/status", new ChangeTicketStatusRequest
         {
-            Status = TicketStatus.Resolved
+            Status = TicketStatus.InProgress
         });
         statusResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -250,12 +258,9 @@ public class TicketIsolationTests : IClassFixture<CustomWebApplicationFactory>
         var (adminToken, _) = await CreateStaffUserDirectlyAsync(UserRole.Admin, "assigning-admin");
         var adminClient = TestClients.WithBearerToken(_factory, adminToken);
 
-        var assignResponse = await adminClient.PutAsJsonAsync($"/api/tickets/{ticketId}", new UpdateTicketRequest
+        var assignResponse = await adminClient.PostAsJsonAsync($"/api/tickets/{ticketId}/assign", new AssignTicketRequest
         {
-            Title = "Cannot log in",
-            Description = "The login page returns a 500 error for my account.",
-            Priority = TicketPriority.High,
-            AssignedAgentId = agentId
+            AgentId = agentId
         });
         assignResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 

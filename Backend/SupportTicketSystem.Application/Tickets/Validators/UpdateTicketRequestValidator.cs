@@ -9,6 +9,5 @@ public class UpdateTicketRequestValidator : AbstractValidator<UpdateTicketReques
     {
         RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Description).NotEmpty();
-        RuleFor(x => x.Priority).IsInEnum();
     }
 }

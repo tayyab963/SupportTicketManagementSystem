@@ -4,10 +4,32 @@
 
 .spacer {
   flex: 1 1 auto;
+  min-width: 8px;
 }
 
 .user-info {
   margin-right: 8px;
   font-size: 0.875rem;
   opacity: 0.9;
+  white-space: nowrap;
+}
+
+mat-toolbar {
+  gap: 4px;
+}
+
+/* Flex items default to min-width: auto, which refuses to shrink below content size and pushes
+   the toolbar (and the whole page) wider than the viewport on narrow screens — min-width: 0 lets
+   the title actually shrink/ellipsize instead. */
+mat-toolbar > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .user-info {
+    display: none;
+  }
 }

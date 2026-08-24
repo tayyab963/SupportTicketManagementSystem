@@ -1,3 +1,4 @@
+using SupportTicketSystem.Application.Common.Models;
 using SupportTicketSystem.Application.Tickets.Dtos;
 
 namespace SupportTicketSystem.Application.Tickets;
@@ -9,7 +10,7 @@ namespace SupportTicketSystem.Application.Tickets;
 /// </summary>
 public interface ITicketService
 {
-    Task<List<TicketListItemDto>> GetTicketsAsync(CancellationToken cancellationToken = default);
+    Task<PagedResult<TicketListItemDto>> GetTicketsAsync(TicketQueryParameters query, CancellationToken cancellationToken = default);
 
     Task<TicketDetailDto> GetTicketByIdAsync(Guid ticketId, CancellationToken cancellationToken = default);
 
@@ -18,6 +19,12 @@ public interface ITicketService
     Task<TicketDetailDto> UpdateTicketAsync(Guid ticketId, UpdateTicketRequest request, CancellationToken cancellationToken = default);
 
     Task<TicketDetailDto> ChangeStatusAsync(Guid ticketId, ChangeTicketStatusRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Admin-only (enforced via [Authorize(Roles = ...)] on the controller action).</summary>
+    Task<TicketDetailDto> AssignAsync(Guid ticketId, AssignTicketRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Admin-only (enforced via [Authorize(Roles = ...)] on the controller action).</summary>
+    Task<TicketDetailDto> ChangePriorityAsync(Guid ticketId, ChangeTicketPriorityRequest request, CancellationToken cancellationToken = default);
 
     Task<TicketDetailDto> AddCommentAsync(Guid ticketId, CreateCommentRequest request, CancellationToken cancellationToken = default);
 
