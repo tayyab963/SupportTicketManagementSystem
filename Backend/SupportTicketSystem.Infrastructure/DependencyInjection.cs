@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SupportTicketSystem.Application.Auth;
 using SupportTicketSystem.Application.Common.Interfaces;
 using SupportTicketSystem.Application.Common.Models;
+using SupportTicketSystem.Application.Dashboard;
 using SupportTicketSystem.Application.Tickets;
 using SupportTicketSystem.Application.Users;
 using SupportTicketSystem.Infrastructure.Identity;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITicketService, TicketService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }

@@ -64,6 +64,21 @@ public class TicketsController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, ApiResponse<TicketDetailDto>.Ok(result, "Comment added."));
     }
 
+    [HttpGet("{id:guid}/comments")]
+    public async Task<ActionResult<ApiResponse<List<CommentDto>>>> GetComments(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _ticketService.GetCommentsAsync(id, cancellationToken);
+        return Ok(ApiResponse<List<CommentDto>>.Ok(result, "Comments retrieved."));
+    }
+
+    /// <summary>Chronological activity log — ticket creation, assignment/status/priority changes, comments, time entries, closing.</summary>
+    [HttpGet("{id:guid}/timeline")]
+    public async Task<ActionResult<ApiResponse<List<ActivityDto>>>> GetTimeline(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _ticketService.GetTimelineAsync(id, cancellationToken);
+        return Ok(ApiResponse<List<ActivityDto>>.Ok(result, "Timeline retrieved."));
+    }
+
     [HttpPost("{id:guid}/status")]
     public async Task<ActionResult<ApiResponse<TicketDetailDto>>> ChangeStatus(Guid id, ChangeTicketStatusRequest request, CancellationToken cancellationToken)
     {
@@ -96,5 +111,14 @@ public class TicketsController : ControllerBase
     {
         var result = await _ticketService.AddTimeEntryAsync(id, request, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, ApiResponse<TicketDetailDto>.Ok(result, "Time entry logged."));
+    }
+
+    /// <summary>Staff-only, same as logging time: internal work logs are not exposed to customers.</summary>
+    [HttpGet("{id:guid}/time-entries")]
+    [Authorize(Roles = $"{nameof(UserRole.SupportAgent)},{nameof(UserRole.Admin)}")]
+    public async Task<ActionResult<ApiResponse<TimeEntrySummaryDto>>> GetTimeEntries(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _ticketService.GetTimeEntriesAsync(id, cancellationToken);
+        return Ok(ApiResponse<TimeEntrySummaryDto>.Ok(result, "Time entries retrieved."));
     }
 }

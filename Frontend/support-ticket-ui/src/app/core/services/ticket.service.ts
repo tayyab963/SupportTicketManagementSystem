@@ -5,15 +5,18 @@ import { environment } from '../../../environments/environment';
 import { ApiSuccessResponse } from '../models/api-response.model';
 import { PagedResult } from '../models/paged-result.model';
 import {
+  ActivityItem,
   AssignTicketRequest,
   ChangeTicketPriorityRequest,
   ChangeTicketStatusRequest,
+  CommentItem,
   CreateCommentRequest,
   CreateTicketRequest,
   CreateTimeEntryRequest,
   TicketDetail,
   TicketListItem,
   TicketQueryParams,
+  TimeEntrySummary,
   UpdateTicketRequest
 } from '../models/ticket.model';
 
@@ -80,6 +83,24 @@ export class TicketService {
   addTimeEntry(id: string, request: CreateTimeEntryRequest): Observable<TicketDetail> {
     return this.http
       .post<ApiSuccessResponse<TicketDetail>>(`${this.baseUrl}/${id}/time-entries`, request)
+      .pipe(map((response) => response.data));
+  }
+
+  getComments(id: string): Observable<CommentItem[]> {
+    return this.http
+      .get<ApiSuccessResponse<CommentItem[]>>(`${this.baseUrl}/${id}/comments`)
+      .pipe(map((response) => response.data));
+  }
+
+  getTimeline(id: string): Observable<ActivityItem[]> {
+    return this.http
+      .get<ApiSuccessResponse<ActivityItem[]>>(`${this.baseUrl}/${id}/timeline`)
+      .pipe(map((response) => response.data));
+  }
+
+  getTimeEntries(id: string): Observable<TimeEntrySummary> {
+    return this.http
+      .get<ApiSuccessResponse<TimeEntrySummary>>(`${this.baseUrl}/${id}/time-entries`)
       .pipe(map((response) => response.data));
   }
 }

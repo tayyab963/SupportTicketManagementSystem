@@ -2,8 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
-import { TicketPriority, TicketStatus } from '../models/enums';
-import { TicketDetail, TicketListItem } from '../models/ticket.model';
+import { ActivityType, TicketPriority, TicketStatus, UserRole } from '../models/enums';
+import { ActivityItem, CommentItem, TicketDetail, TicketListItem, TimeEntrySummary } from '../models/ticket.model';
 import { TicketService } from './ticket.service';
 
 describe('TicketService', () => {
@@ -95,5 +95,73 @@ describe('TicketService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ agentId: 'agent-1' });
     req.flush({ success: true, message: 'ok', data: {} });
+  });
+
+  it('getComments fetches /tickets/{id}/comments and unwraps the list', () => {
+    const comment: CommentItem = {
+      id: 'comment-1',
+      userId: 'cust-1',
+      userName: 'Carol Customer',
+      userRole: UserRole.Customer,
+      commentText: 'Any update?',
+      createdAt: '2026-08-24T00:00:00Z'
+    };
+
+    let result: CommentItem[] | undefined;
+    service.getComments('ticket-1').subscribe((r) => (result = r));
+
+    const req = httpMock.expectOne(`${baseUrl}/ticket-1/comments`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ success: true, message: 'ok', data: [comment] });
+
+    expect(result).toEqual([comment]);
+  });
+
+  it('getTimeline fetches /tickets/{id}/timeline and unwraps the list', () => {
+    const activity: ActivityItem = {
+      id: 'activity-1',
+      activityType: ActivityType.StatusChanged,
+      description: 'StatusChanged',
+      userId: 'admin-1',
+      userName: 'Alice Admin',
+      oldValue: 'Open',
+      newValue: 'InProgress',
+      createdAt: '2026-08-24T00:00:00Z'
+    };
+
+    let result: ActivityItem[] | undefined;
+    service.getTimeline('ticket-1').subscribe((r) => (result = r));
+
+    const req = httpMock.expectOne(`${baseUrl}/ticket-1/timeline`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ success: true, message: 'ok', data: [activity] });
+
+    expect(result).toEqual([activity]);
+  });
+
+  it('getTimeEntries fetches /tickets/{id}/time-entries and unwraps the summary', () => {
+    const summary: TimeEntrySummary = {
+      entries: [
+        {
+          id: 'entry-1',
+          userId: 'agent-1',
+          userName: 'Alan Agent',
+          workDate: '2026-08-24',
+          durationMinutes: 45,
+          description: 'Investigated the issue.',
+          createdAt: '2026-08-24T00:00:00Z'
+        }
+      ],
+      totalDurationMinutes: 45
+    };
+
+    let result: TimeEntrySummary | undefined;
+    service.getTimeEntries('ticket-1').subscribe((r) => (result = r));
+
+    const req = httpMock.expectOne(`${baseUrl}/ticket-1/time-entries`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ success: true, message: 'ok', data: summary });
+
+    expect(result).toEqual(summary);
   });
 });

@@ -1,15 +1,12 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, WritableSignal, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, WritableSignal, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -20,6 +17,9 @@ import { UserSummary } from '../../../../core/models/user.model';
 import { AuthService } from '../../../../core/services/auth.service';
 import { TicketService } from '../../../../core/services/ticket.service';
 import { UserService } from '../../../../core/services/user.service';
+import { ActivityTimelineComponent } from '../../components/activity-timeline/activity-timeline.component';
+import { CommentsSectionComponent } from '../../components/comments-section/comments-section.component';
+import { TimeTrackingComponent } from '../../components/time-tracking/time-tracking.component';
 
 const UNASSIGNED = '__unassigned__';
 
@@ -28,18 +28,18 @@ const UNASSIGNED = '__unassigned__';
   standalone: true,
   imports: [
     DatePipe,
-    ReactiveFormsModule,
     RouterLink,
     MatCardModule,
     MatFormFieldModule,
-    MatInputModule,
     MatSelectModule,
-    MatDatepickerModule,
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ActivityTimelineComponent,
+    CommentsSectionComponent,
+    TimeTrackingComponent
   ],
   template: `
     @if (loading()) {
@@ -187,92 +187,25 @@ const UNASSIGNED = '__unassigned__';
 
           <mat-divider />
 
-          @if (ticket.timeEntries) {
-            <section>
-              <h3>Time Entries</h3>
-              @if (ticket.timeEntries.length === 0) {
-                <p class="empty-state">No time logged yet.</p>
-              } @else {
-                <table class="simple-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Agent</th>
-                      <th>Minutes</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (entry of ticket.timeEntries; track entry.id) {
-                      <tr>
-                        <td>{{ entry.workDate | date: 'mediumDate' }}</td>
-                        <td>{{ entry.userName }}</td>
-                        <td>{{ entry.durationMinutes }}</td>
-                        <td>{{ entry.description }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              }
+          <app-activity-timeline #timeline [ticketId]="ticket.id" />
 
-              <form [formGroup]="timeEntryForm" (ngSubmit)="submitTimeEntry()" class="time-entry-form">
-                <mat-form-field appearance="outline">
-                  <mat-label>Work date</mat-label>
-                  <input matInput [matDatepicker]="picker" formControlName="workDate" [max]="today" />
-                  <mat-datepicker-toggle matSuffix [for]="picker" [disabled]="!canLogTime()" />
-                  <mat-datepicker #picker />
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="minutes-field">
-                  <mat-label>Minutes</mat-label>
-                  <input matInput type="number" min="1" formControlName="durationMinutes" />
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="description-field">
-                  <mat-label>Description</mat-label>
-                  <input matInput formControlName="description" />
-                </mat-form-field>
-                <button
-                  mat-stroked-button
-                  type="submit"
-                  [disabled]="!canLogTime() || timeEntryForm.invalid || timeEntrySubmitting()"
-                  [matTooltip]="canLogTime() ? '' : 'Only the assigned agent (or an admin) can log time.'"
-                >
-                  Log Time
-                </button>
-              </form>
-            </section>
+          <mat-divider />
+
+          @if (showTimeTracking()) {
+            <app-time-tracking
+              [ticketId]="ticket.id"
+              [canLogTime]="canLogTime()"
+              (timeEntryAdded)="timeline.reload()"
+            />
 
             <mat-divider />
           }
 
-          <section>
-            <h3>Comments</h3>
-            @if (ticket.comments.length === 0) {
-              <p class="empty-state">No comments yet.</p>
-            } @else {
-              <ul class="comment-list">
-                @for (comment of ticket.comments; track comment.id) {
-                  <li>
-                    <div class="comment-meta">
-                      <strong>{{ comment.userName }}</strong>
-                      <span class="comment-role">{{ comment.userRole }}</span>
-                      <span class="comment-date">{{ comment.createdAt | date: 'medium' }}</span>
-                    </div>
-                    <p>{{ comment.commentText }}</p>
-                  </li>
-                }
-              </ul>
-            }
-
-            <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="comment-form">
-              <mat-form-field appearance="outline">
-                <mat-label>Add a comment</mat-label>
-                <textarea matInput formControlName="commentText" rows="3"></textarea>
-              </mat-form-field>
-              <button mat-flat-button color="primary" type="submit" [disabled]="commentForm.invalid || commentSubmitting()">
-                Post Comment
-              </button>
-            </form>
-          </section>
+          <app-comments-section
+            [ticketId]="ticket.id"
+            [canComment]="canComment()"
+            (commentAdded)="timeline.reload()"
+          />
         </mat-card-content>
       </mat-card>
     }
@@ -303,18 +236,6 @@ const UNASSIGNED = '__unassigned__';
     .inline-control mat-form-field { flex: 1 1 160px; }
     .error-message { color: var(--mat-sys-error); font-size: 0.875rem; }
     .empty-state { opacity: 0.7; }
-    .simple-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-    .simple-table th, .simple-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--mat-sys-outline-variant); font-size: 0.875rem; }
-    .time-entry-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
-    .minutes-field { max-width: 120px; }
-    .description-field { flex: 1 1 200px; }
-    .comment-list { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 12px; }
-    .comment-list li { border-left: 3px solid var(--mat-sys-outline-variant); padding-left: 10px; }
-    .comment-list p { margin: 4px 0 0; white-space: pre-wrap; }
-    .comment-meta { display: flex; gap: 8px; align-items: baseline; font-size: 0.8rem; }
-    .comment-role { opacity: 0.6; }
-    .comment-date { opacity: 0.5; margin-left: auto; }
-    .comment-form { display: flex; flex-direction: column; gap: 4px; max-width: 480px; }
 
     .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; white-space: nowrap; }
     .status-open { background: #e3f2fd; color: #0d47a1; }
@@ -328,15 +249,15 @@ const UNASSIGNED = '__unassigned__';
   `]
 })
 export class TicketDetailComponent implements OnInit {
-  private readonly fb = inject(FormBuilder);
   private readonly ticketService = inject(TicketService);
   private readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
+  @ViewChild('timeline') private timelineComponent?: ActivityTimelineComponent;
+
   protected readonly priorityOptions = Object.values(TicketPriority);
   protected readonly unassignedValue = UNASSIGNED;
-  protected readonly today = new Date();
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -350,19 +271,7 @@ export class TicketDetailComponent implements OnInit {
   protected readonly statusSubmitting = signal(false);
   protected readonly prioritySubmitting = signal(false);
   protected readonly assignSubmitting = signal(false);
-  protected readonly commentSubmitting = signal(false);
-  protected readonly timeEntrySubmitting = signal(false);
   protected readonly actionError = signal<string | null>(null);
-
-  protected readonly commentForm = this.fb.nonNullable.group({
-    commentText: ['', [Validators.required]]
-  });
-
-  protected readonly timeEntryForm = this.fb.nonNullable.group({
-    workDate: [new Date(), [Validators.required]],
-    durationMinutes: [30, [Validators.required, Validators.min(1)]],
-    description: ['', [Validators.required]]
-  });
 
   private readonly currentUser = this.authService.currentUser;
 
@@ -423,6 +332,17 @@ export class TicketDetailComponent implements OnInit {
     () => this.authService.hasRole(UserRole.Admin) || (this.authService.hasRole(UserRole.SupportAgent) && this.isAssignedAgent())
   );
 
+  /** Mirrors TicketService.AddCommentAsync's EnsureAgentAssigned check — a UX projection only. */
+  protected readonly canComment = computed(() => {
+    if (this.authService.hasRole(UserRole.Admin) || this.authService.hasRole(UserRole.Customer)) {
+      return true;
+    }
+    return this.authService.hasRole(UserRole.SupportAgent) && this.isAssignedAgent();
+  });
+
+  /** Internal work logs are never shown to customers — mirrors TicketDetailDto.TimeEntries being null for that role. */
+  protected readonly showTimeTracking = computed(() => !this.authService.hasRole(UserRole.Customer));
+
   protected readonly assignmentChanged = computed(() => {
     const ticket = this.ticket();
     if (!ticket) {
@@ -473,6 +393,7 @@ export class TicketDetailComponent implements OnInit {
       next: (updated) => {
         this.applyTicket(updated);
         this.statusSubmitting.set(false);
+        this.timelineComponent?.reload();
       },
       error: (error: HttpErrorResponse) => this.handleActionError(error, this.statusSubmitting)
     });
@@ -491,6 +412,7 @@ export class TicketDetailComponent implements OnInit {
       next: (updated) => {
         this.applyTicket(updated);
         this.prioritySubmitting.set(false);
+        this.timelineComponent?.reload();
       },
       error: (error: HttpErrorResponse) => this.handleActionError(error, this.prioritySubmitting)
     });
@@ -509,45 +431,9 @@ export class TicketDetailComponent implements OnInit {
       next: (updated) => {
         this.applyTicket(updated);
         this.assignSubmitting.set(false);
+        this.timelineComponent?.reload();
       },
       error: (error: HttpErrorResponse) => this.handleActionError(error, this.assignSubmitting)
-    });
-  }
-
-  protected submitComment(): void {
-    const ticket = this.ticket();
-    if (!ticket || this.commentForm.invalid) {
-      return;
-    }
-
-    this.commentSubmitting.set(true);
-    this.actionError.set(null);
-    this.ticketService.addComment(ticket.id, this.commentForm.getRawValue()).subscribe({
-      next: (updated) => {
-        this.applyTicket(updated);
-        this.commentForm.reset({ commentText: '' });
-        this.commentSubmitting.set(false);
-      },
-      error: (error: HttpErrorResponse) => this.handleActionError(error, this.commentSubmitting)
-    });
-  }
-
-  protected submitTimeEntry(): void {
-    const ticket = this.ticket();
-    if (!ticket || this.timeEntryForm.invalid) {
-      return;
-    }
-
-    this.timeEntrySubmitting.set(true);
-    this.actionError.set(null);
-    const { workDate, durationMinutes, description } = this.timeEntryForm.getRawValue();
-    this.ticketService.addTimeEntry(ticket.id, { workDate: toIsoDate(workDate), durationMinutes, description }).subscribe({
-      next: (updated) => {
-        this.applyTicket(updated);
-        this.timeEntryForm.reset({ workDate: new Date(), durationMinutes: 30, description: '' });
-        this.timeEntrySubmitting.set(false);
-      },
-      error: (error: HttpErrorResponse) => this.handleActionError(error, this.timeEntrySubmitting)
     });
   }
 
@@ -563,11 +449,4 @@ export class TicketDetailComponent implements OnInit {
     const body = error.error as ApiErrorResponse | undefined;
     this.actionError.set(body?.message ?? 'That action could not be completed. Please try again.');
   }
-}
-
-function toIsoDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }

@@ -29,4 +29,11 @@ public interface ITicketService
     Task<TicketDetailDto> AddCommentAsync(Guid ticketId, CreateCommentRequest request, CancellationToken cancellationToken = default);
 
     Task<TicketDetailDto> AddTimeEntryAsync(Guid ticketId, CreateTimeEntryRequest request, CancellationToken cancellationToken = default);
+
+    Task<List<CommentDto>> GetCommentsAsync(Guid ticketId, CancellationToken cancellationToken = default);
+
+    /// <summary>Chronological (oldest first) — ticket creation, assignment/status/priority changes, comments, time entries, and closing.</summary>
+    Task<List<ActivityDto>> GetTimelineAsync(Guid ticketId, CancellationToken cancellationToken = default);
+
+    Task<TimeEntrySummaryDto> GetTimeEntriesAsync(Guid ticketId, CancellationToken cancellationToken = default);
 }

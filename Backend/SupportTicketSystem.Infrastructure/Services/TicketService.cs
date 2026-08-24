@@ -243,6 +243,14 @@ public class TicketService : ITicketService
 
         AddActivity(ticket, ActivityType.StatusChanged, previousStatus.ToString(), request.Status.ToString());
 
+        // A distinct, explicitly-labeled activity in addition to the generic StatusChanged one, so the
+        // timeline surfaces closing as its own tracked event per the Phase 4 spec ("closing" is listed
+        // alongside, not folded into, "status changes").
+        if (request.Status == TicketStatus.Closed)
+        {
+            AddActivity(ticket, ActivityType.Closed, previousStatus.ToString(), request.Status.ToString());
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
         return await GetTicketByIdAsync(ticket.Id, cancellationToken);
     }
@@ -252,24 +260,32 @@ public class TicketService : ITicketService
         // Admin-only — enforced by [Authorize(Roles = nameof(UserRole.Admin))] on the controller action.
         var ticket = await LoadScopedTicketForMutationAsync(ticketId, cancellationToken);
 
+        string? newAgentName = null;
         if (request.AgentId is { } agentId)
         {
-            var agentExists = await _db.Users
-                .AnyAsync(u => u.Id == agentId && u.Role == UserRole.SupportAgent && u.IsActive, cancellationToken);
+            var agent = await _db.Users
+                .FirstOrDefaultAsync(u => u.Id == agentId && u.Role == UserRole.SupportAgent && u.IsActive, cancellationToken);
 
-            if (!agentExists)
+            if (agent is null)
             {
                 throw new NotFoundException("Agent not found.");
             }
+
+            newAgentName = $"{agent.FirstName} {agent.LastName}";
         }
 
         if (ticket.AssignedAgentId != request.AgentId)
         {
-            AddActivity(
-                ticket,
-                ActivityType.AssignmentChanged,
-                ticket.AssignedAgentId?.ToString() ?? "Unassigned",
-                request.AgentId?.ToString() ?? "Unassigned");
+            // Recorded by name (not the raw id) so the activity timeline can render "Assigned to John"
+            // directly, without every reader having to resolve a user id to a name.
+            var oldAgentName = ticket.AssignedAgentId is { } oldAgentId
+                ? await _db.Users
+                    .Where(u => u.Id == oldAgentId)
+                    .Select(u => u.FirstName + " " + u.LastName)
+                    .FirstOrDefaultAsync(cancellationToken)
+                : null;
+
+            AddActivity(ticket, ActivityType.AssignmentChanged, oldAgentName ?? "Unassigned", newAgentName ?? "Unassigned");
             ticket.AssignedAgentId = request.AgentId;
         }
 
@@ -295,6 +311,11 @@ public class TicketService : ITicketService
     public async Task<TicketDetailDto> AddCommentAsync(Guid ticketId, CreateCommentRequest request, CancellationToken cancellationToken = default)
     {
         var ticket = await LoadScopedTicketForMutationAsync(ticketId, cancellationToken);
+
+        if (_currentUser.Role == UserRole.SupportAgent)
+        {
+            EnsureAgentAssigned(ticket);
+        }
 
         _db.Comments.Add(new Comment
         {
@@ -330,10 +351,87 @@ public class TicketService : ITicketService
             Description = request.Description.Trim()
         });
 
-        AddActivity(ticket, ActivityType.TimeLogged, null, $"{request.DurationMinutes} minutes");
+        // NewValue holds the raw minute count (not a pre-formatted phrase) so callers/UI can render
+        // it however they like, e.g. as "1h 30m logged" on the activity timeline.
+        AddActivity(ticket, ActivityType.TimeLogged, null, request.DurationMinutes.ToString());
 
         await _db.SaveChangesAsync(cancellationToken);
         return await GetTicketByIdAsync(ticket.Id, cancellationToken);
+    }
+
+    public async Task<List<CommentDto>> GetCommentsAsync(Guid ticketId, CancellationToken cancellationToken = default)
+    {
+        await EnsureTicketVisibleAsync(ticketId, cancellationToken);
+
+        return await _db.Comments
+            .AsNoTracking()
+            .Where(c => c.TicketId == ticketId)
+            .OrderBy(c => c.CreatedAt)
+            .Select(c => new CommentDto
+            {
+                Id = c.Id,
+                UserId = c.UserId,
+                UserName = c.User.FirstName + " " + c.User.LastName,
+                UserRole = c.User.Role,
+                CommentText = c.CommentText,
+                CreatedAt = c.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<ActivityDto>> GetTimelineAsync(Guid ticketId, CancellationToken cancellationToken = default)
+    {
+        await EnsureTicketVisibleAsync(ticketId, cancellationToken);
+
+        return await _db.TicketActivities
+            .AsNoTracking()
+            .Where(a => a.TicketId == ticketId)
+            .OrderBy(a => a.CreatedAt)
+            .Select(a => new ActivityDto
+            {
+                Id = a.Id,
+                ActivityType = a.ActivityType,
+                Description = a.Description,
+                UserId = a.UserId,
+                UserName = a.User.FirstName + " " + a.User.LastName,
+                OldValue = a.OldValue,
+                NewValue = a.NewValue,
+                CreatedAt = a.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>Staff-only (enforced via [Authorize(Roles = ...)] on the controller action) — internal work logs are not exposed to customers, same as TicketDetailDto.TimeEntries.</summary>
+    public async Task<TimeEntrySummaryDto> GetTimeEntriesAsync(Guid ticketId, CancellationToken cancellationToken = default)
+    {
+        await EnsureTicketVisibleAsync(ticketId, cancellationToken);
+
+        var entries = await _db.TimeEntries
+            .AsNoTracking()
+            .Where(te => te.TicketId == ticketId)
+            .OrderBy(te => te.WorkDate)
+            .Select(te => new TimeEntryDto
+            {
+                Id = te.Id,
+                UserId = te.UserId,
+                UserName = te.User.FirstName + " " + te.User.LastName,
+                WorkDate = te.WorkDate,
+                DurationMinutes = te.DurationMinutes,
+                Description = te.Description,
+                CreatedAt = te.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        // SUM computed by the database, not by summing the projected DTOs in memory.
+        var totalDurationMinutes = await _db.TimeEntries
+            .Where(te => te.TicketId == ticketId)
+            .SumAsync(te => te.DurationMinutes, cancellationToken);
+
+        return new TimeEntrySummaryDto
+        {
+            Entries = entries,
+            TotalDurationMinutes = totalDurationMinutes
+        };
     }
 
     /// <summary>
@@ -379,6 +477,22 @@ public class TicketService : ITicketService
             .FirstOrDefaultAsync(t => t.Id == ticketId, cancellationToken);
 
         return ticket ?? throw new NotFoundException("Ticket not found.");
+    }
+
+    /// <summary>
+    /// Existence + visibility check for a ticket's sub-resources (comments/timeline/time-entries) that
+    /// don't need the Ticket entity itself — same 404-not-403 scoping as
+    /// <see cref="LoadScopedTicketWithDetailsAsync"/>, without loading the whole ticket.
+    /// </summary>
+    private async Task EnsureTicketVisibleAsync(Guid ticketId, CancellationToken cancellationToken)
+    {
+        var exists = await ApplyDetailVisibilityScope(_db.Tickets.AsNoTracking())
+            .AnyAsync(t => t.Id == ticketId, cancellationToken);
+
+        if (!exists)
+        {
+            throw new NotFoundException("Ticket not found.");
+        }
     }
 
     private void EnsureAgentAssigned(Ticket ticket)
