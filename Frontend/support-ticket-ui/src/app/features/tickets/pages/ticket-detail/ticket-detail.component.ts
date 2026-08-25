@@ -19,6 +19,7 @@ import { UserSummary } from '../../../../core/models/user.model';
 import { AuthService } from '../../../../core/services/auth.service';
 import { TicketService } from '../../../../core/services/ticket.service';
 import { UserService } from '../../../../core/services/user.service';
+import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ActivityTimelineComponent } from '../../components/activity-timeline/activity-timeline.component';
 import { CommentsSectionComponent } from '../../components/comments-section/comments-section.component';
@@ -42,6 +43,7 @@ const UNASSIGNED = '__unassigned__';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
+    BadgeComponent,
     ActivityTimelineComponent,
     CommentsSectionComponent,
     TimeTrackingComponent
@@ -57,26 +59,48 @@ const UNASSIGNED = '__unassigned__';
         </mat-card-content>
       </mat-card>
     } @else if (ticket(); as ticket) {
+      <a mat-button routerLink="/tickets" class="back-link">
+        <mat-icon>arrow_back</mat-icon>
+        Back to tickets
+      </a>
       <mat-card class="detail-card">
         <mat-card-header class="detail-header">
           <mat-card-title>{{ ticket.ticketNumber }} — {{ ticket.title }}</mat-card-title>
           <div class="header-badges">
-            <span class="badge status-{{ ticket.status.toLowerCase() }}">{{ ticket.status }}</span>
-            <span class="badge priority-{{ ticket.priority.toLowerCase() }}">{{ ticket.priority }}</span>
+            <app-badge variant="status" [value]="ticket.status" />
+            <app-badge variant="priority" [value]="ticket.priority" />
           </div>
         </mat-card-header>
 
         <mat-card-content>
           <section class="summary-grid">
-            <div><span class="label">Customer</span><span>{{ ticket.customerName }}</span></div>
-            <div><span class="label">Assigned agent</span><span>{{ ticket.assignedAgentName ?? 'Unassigned' }}</span></div>
-            <div><span class="label">Created</span><span>{{ ticket.createdAt | date: 'medium' }}</span></div>
-            <div><span class="label">Updated</span><span>{{ ticket.updatedAt | date: 'medium' }}</span></div>
+            <div class="summary-item">
+              <mat-icon>person</mat-icon>
+              <span><span class="label">Customer</span><span class="summary-value">{{ ticket.customerName }}</span></span>
+            </div>
+            <div class="summary-item">
+              <mat-icon>support_agent</mat-icon>
+              <span><span class="label">Assigned agent</span><span class="summary-value">{{ ticket.assignedAgentName ?? 'Unassigned' }}</span></span>
+            </div>
+            <div class="summary-item">
+              <mat-icon>calendar_today</mat-icon>
+              <span><span class="label">Created</span><span class="summary-value">{{ ticket.createdAt | date: 'medium' }}</span></span>
+            </div>
+            <div class="summary-item">
+              <mat-icon>update</mat-icon>
+              <span><span class="label">Updated</span><span class="summary-value">{{ ticket.updatedAt | date: 'medium' }}</span></span>
+            </div>
             @if (ticket.resolvedAt) {
-              <div><span class="label">Resolved</span><span>{{ ticket.resolvedAt | date: 'medium' }}</span></div>
+              <div class="summary-item">
+                <mat-icon>task_alt</mat-icon>
+                <span><span class="label">Resolved</span><span class="summary-value">{{ ticket.resolvedAt | date: 'medium' }}</span></span>
+              </div>
             }
             @if (ticket.closedAt) {
-              <div><span class="label">Closed</span><span>{{ ticket.closedAt | date: 'medium' }}</span></div>
+              <div class="summary-item">
+                <mat-icon>lock</mat-icon>
+                <span><span class="label">Closed</span><span class="summary-value">{{ ticket.closedAt | date: 'medium' }}</span></span>
+              </div>
             }
           </section>
 
@@ -97,8 +121,8 @@ const UNASSIGNED = '__unassigned__';
           <mat-divider />
 
           <section class="actions-grid">
-            <div class="action-block">
-              <h3>Status</h3>
+            <div class="action-block action-status">
+              <h3><mat-icon>swap_horiz</mat-icon>Status</h3>
               <div class="inline-control">
                 <mat-form-field appearance="outline">
                   <mat-label>Next status</mat-label>
@@ -124,8 +148,8 @@ const UNASSIGNED = '__unassigned__';
               </div>
             </div>
 
-            <div class="action-block">
-              <h3>Priority</h3>
+            <div class="action-block action-priority">
+              <h3><mat-icon>priority_high</mat-icon>Priority</h3>
               <div class="inline-control">
                 <mat-form-field appearance="outline">
                   <mat-label>Priority</mat-label>
@@ -151,8 +175,8 @@ const UNASSIGNED = '__unassigned__';
               </div>
             </div>
 
-            <div class="action-block">
-              <h3>Assignment</h3>
+            <div class="action-block action-assignment">
+              <h3><mat-icon>assignment_ind</mat-icon>Assignment</h3>
               <div class="inline-control">
                 <mat-form-field appearance="outline">
                   <mat-label>Agent</mat-label>
@@ -216,41 +240,60 @@ const UNASSIGNED = '__unassigned__';
     }
   `,
   styles: [`
-    .detail-card { margin: 16px; }
+    .back-link { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; color: var(--mat-sys-on-surface-variant); }
+    .back-link mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .detail-card { margin: 0; }
     .loading-spinner { margin: 48px auto; }
     .detail-header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; width: 100%; }
-    .detail-header ::ng-deep .mat-mdc-card-header-text { flex: 1 1 auto; }
     .header-badges { display: flex; gap: 8px; }
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin: 16px 0;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin: 20px 0;
     }
+    .summary-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--mat-sys-surface-container-low, rgba(0, 0, 0, 0.02));
+    }
+    .summary-item mat-icon { flex-shrink: 0; opacity: 0.6; margin-top: 1px; }
+    .summary-item > span { display: flex; flex-direction: column; min-width: 0; }
+    .summary-value { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .summary-grid .label { display: block; font-size: 0.75rem; opacity: 0.6; }
-    .description { white-space: pre-wrap; margin: 16px 0; }
+    .description { white-space: pre-wrap; margin: 16px 0; line-height: 1.55; }
     .edit-action { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-    mat-divider { margin: 16px 0; }
+    mat-divider { margin: 20px 0; }
     .actions-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
     }
-    .action-block h3 { margin: 0 0 4px; font-size: 0.95rem; }
+    .action-block {
+      padding: 14px 16px;
+      border-radius: 12px;
+      border-left: 3px solid var(--mat-sys-outline-variant);
+      background: var(--mat-sys-surface-container-low, rgba(0, 0, 0, 0.02));
+    }
+    .action-block h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .action-block h3 mat-icon { font-size: 18px; width: 18px; height: 18px; opacity: 0.75; }
+    .action-status { border-left-color: #4f46e5; }
+    .action-priority { border-left-color: #f59e0b; }
+    .action-assignment { border-left-color: #10b981; }
     .inline-control { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
     .inline-control mat-form-field { flex: 1 1 160px; }
     .error-message { color: var(--mat-sys-error); font-size: 0.875rem; }
     .empty-state { opacity: 0.7; }
-
-    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; white-space: nowrap; }
-    .status-open { background: #e3f2fd; color: #0d47a1; }
-    .status-inprogress { background: #fff3e0; color: #e65100; }
-    .status-resolved { background: #e8f5e9; color: #1b5e20; }
-    .status-closed { background: #eceff1; color: #37474f; }
-    .priority-low { background: #eceff1; color: #37474f; }
-    .priority-medium { background: #e3f2fd; color: #0d47a1; }
-    .priority-high { background: #fff3e0; color: #e65100; }
-    .priority-critical { background: #ffebee; color: #b71c1c; }
   `]
 })
 export class TicketDetailComponent implements OnInit {

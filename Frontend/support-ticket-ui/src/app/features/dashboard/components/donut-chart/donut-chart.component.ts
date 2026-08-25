@@ -48,7 +48,7 @@ const GAP = 3;
       <ul class="legend">
         @for (arc of arcs(); track arc.label) {
           <li>
-            <span class="swatch" [style.background]="arc.color"></span>
+            <span class="swatch" [style.background]="arc.color" [style.color]="arc.color"></span>
             <span class="legend-label">{{ arc.label }}</span>
             <span class="legend-value">{{ arc.value }} &middot; {{ arc.percentage }}%</span>
           </li>
@@ -60,16 +60,17 @@ const GAP = 3;
     </div>
   `,
   styles: [`
-    .donut-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-    .donut-svg { width: 160px; height: 160px; flex-shrink: 0; }
-    .donut-track { stroke: var(--mat-sys-surface-variant, #e1e0d9); }
-    .donut-arc { transform: rotate(-90deg); transform-origin: 70px 70px; cursor: default; }
-    .donut-total-value { font-size: 22px; font-weight: 600; fill: currentColor; transform: rotate(0deg); }
-    .donut-total-label { font-size: 10px; fill: currentColor; opacity: 0.6; }
-    .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; min-width: 160px; flex: 1 1 160px; }
-    .legend li { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
-    .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-    .legend-label { flex: 1 1 auto; }
+    .donut-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .donut-svg { width: 168px; height: 168px; flex-shrink: 0; }
+    .donut-track { stroke: var(--mat-sys-surface-container-highest, #e1e0d9); }
+    .donut-arc { transform: rotate(-90deg); transform-origin: 70px 70px; cursor: default; transition: opacity 0.15s ease; }
+    .donut-arc:hover { opacity: 0.8; }
+    .donut-total-value { font-size: 24px; font-weight: 700; fill: currentColor; transform: rotate(0deg); }
+    .donut-total-label { font-size: 10px; fill: currentColor; opacity: 0.6; letter-spacing: 0.04em; text-transform: uppercase; }
+    .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 160px; flex: 1 1 160px; }
+    .legend li { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+    .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 15%, transparent); }
+    .legend-label { flex: 1 1 auto; font-weight: 500; }
     .legend-value { opacity: 0.65; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .empty-state { opacity: 0.6; }
   `]

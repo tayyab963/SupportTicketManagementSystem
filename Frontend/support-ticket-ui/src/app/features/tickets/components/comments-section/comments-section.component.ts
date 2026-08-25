@@ -4,6 +4,7 @@ import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChange
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -19,10 +20,19 @@ import { TicketService } from '../../../../core/services/ticket.service';
 @Component({
   selector: 'app-comments-section',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [
+    DatePipe,
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule
+  ],
   template: `
     <section class="comments-section">
-      <h3>Comments</h3>
+      <h3><mat-icon>chat_bubble</mat-icon>Comments</h3>
 
       @if (loading()) {
         <mat-progress-spinner diameter="24" mode="indeterminate" />
@@ -34,12 +44,15 @@ import { TicketService } from '../../../../core/services/ticket.service';
         <ul class="comment-list">
           @for (comment of comments(); track comment.id) {
             <li>
-              <div class="comment-meta">
-                <strong>{{ comment.userName }}</strong>
-                <span class="comment-role">{{ comment.userRole }}</span>
-                <span class="comment-date">{{ comment.createdAt | date: 'medium' }}</span>
+              <span class="comment-avatar">{{ initials(comment.userName) }}</span>
+              <div class="comment-card">
+                <div class="comment-meta">
+                  <strong>{{ comment.userName }}</strong>
+                  <span class="comment-role">{{ comment.userRole }}</span>
+                  <span class="comment-date">{{ comment.createdAt | date: 'medium' }}</span>
+                </div>
+                <p>{{ comment.commentText }}</p>
               </div>
-              <p>{{ comment.commentText }}</p>
             </li>
           }
         </ul>
@@ -62,11 +75,32 @@ import { TicketService } from '../../../../core/services/ticket.service';
     </section>
   `,
   styles: [`
-    .comments-section h3 { margin: 0 0 8px; font-size: 0.95rem; }
-    .comment-list { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 12px; }
-    .comment-list li { border-left: 3px solid var(--mat-sys-outline-variant); padding-left: 10px; }
-    .comment-list p { margin: 4px 0 0; white-space: pre-wrap; }
-    .comment-meta { display: flex; gap: 8px; align-items: baseline; font-size: 0.8rem; }
+    .comments-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 0.95rem; font-weight: 600; }
+    .comments-section h3 mat-icon { font-size: 18px; width: 18px; height: 18px; opacity: 0.7; }
+    .comment-list { list-style: none; padding: 0; margin: 0 0 20px; display: flex; flex-direction: column; gap: 14px; }
+    .comment-list li { display: flex; gap: 12px; align-items: flex-start; }
+    .comment-avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--mat-sys-tertiary, #9c2b5f) 16%, transparent);
+      color: var(--mat-sys-tertiary, #9c2b5f);
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .comment-card {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--mat-sys-surface-container-low, rgba(0, 0, 0, 0.02));
+    }
+    .comment-card p { margin: 4px 0 0; white-space: pre-wrap; }
+    .comment-meta { display: flex; gap: 8px; align-items: baseline; font-size: 0.8rem; flex-wrap: wrap; }
     .comment-role { opacity: 0.6; }
     .comment-date { opacity: 0.5; margin-left: auto; }
     .comment-form { display: flex; flex-direction: column; gap: 4px; max-width: 480px; }
@@ -105,6 +139,15 @@ export class CommentsSectionComponent implements OnInit, OnChanges {
 
   reload(): void {
     this.load();
+  }
+
+  protected initials(name: string): string {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('');
   }
 
   protected submit(): void {

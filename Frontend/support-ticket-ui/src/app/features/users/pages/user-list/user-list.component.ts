@@ -22,6 +22,8 @@ import { UserRole } from '../../../../core/models/enums';
 import { PagedResult } from '../../../../core/models/paged-result.model';
 import { UserListItem, UserQueryParams } from '../../../../core/models/user.model';
 import { UserFormDialogComponent } from '../../components/user-form-dialog/user-form-dialog.component';
+import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 type ActiveFilter = 'all' | 'active' | 'inactive';
@@ -43,12 +45,20 @@ type ActiveFilter = 'all' | 'active' | 'inactive';
     MatProgressBarModule,
     MatTooltipModule,
     MatDialogModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    BadgeComponent,
+    EmptyStateComponent
   ],
   template: `
     <mat-card class="list-card">
       <mat-card-header class="list-header">
-        <mat-card-title>User Management</mat-card-title>
+        <div class="header-title">
+          <span class="header-icon"><mat-icon>group</mat-icon></span>
+          <div>
+            <mat-card-title>User Management</mat-card-title>
+            <p class="header-subtitle">Manage accounts, roles and access.</p>
+          </div>
+        </div>
         <button mat-flat-button color="primary" (click)="openCreateDialog()">
           <mat-icon>person_add</mat-icon>
           New User
@@ -91,7 +101,12 @@ type ActiveFilter = 'all' | 'active' | 'inactive';
           <table mat-table [dataSource]="items()" class="users-table">
             <ng-container matColumnDef="name">
               <th mat-header-cell *matHeaderCellDef>Name</th>
-              <td mat-cell *matCellDef="let user">{{ user.firstName }} {{ user.lastName }}</td>
+              <td mat-cell *matCellDef="let user">
+                <div class="name-cell">
+                  <span class="user-avatar">{{ initials(user) }}</span>
+                  <span>{{ user.firstName }} {{ user.lastName }}</span>
+                </div>
+              </td>
             </ng-container>
 
             <ng-container matColumnDef="email">
@@ -102,16 +117,14 @@ type ActiveFilter = 'all' | 'active' | 'inactive';
             <ng-container matColumnDef="role">
               <th mat-header-cell *matHeaderCellDef>Role</th>
               <td mat-cell *matCellDef="let user">
-                <span class="badge role-{{ user.role.toLowerCase() }}">{{ user.role }}</span>
+                <app-badge variant="role" [value]="user.role" />
               </td>
             </ng-container>
 
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef>Status</th>
               <td mat-cell *matCellDef="let user">
-                <span class="badge" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive">
-                  {{ user.isActive ? 'Active' : 'Inactive' }}
-                </span>
+                <app-badge variant="status" [value]="user.isActive ? 'Active' : 'Inactive'" />
               </td>
             </ng-container>
 
@@ -148,7 +161,7 @@ type ActiveFilter = 'all' | 'active' | 'inactive';
           </table>
 
           @if (!loading() && items().length === 0) {
-            <p class="empty-state">No users match the current filters.</p>
+            <app-empty-state icon="group_off" message="No users match the current filters." />
           }
         </div>
 
@@ -163,41 +176,57 @@ type ActiveFilter = 'all' | 'active' | 'inactive';
     </mat-card>
   `,
   styles: [`
-    .list-card { margin: 16px; }
+    .list-card { margin: 0; }
     .list-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       width: 100%;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-    .list-header ::ng-deep .mat-mdc-card-header-text { flex: 1 1 auto; }
+    .header-title { display: flex; align-items: center; gap: 12px; }
+    .header-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+      color: var(--mat-sys-primary);
+    }
+    .header-subtitle { margin: 2px 0 0; font-size: 0.8125rem; color: var(--mat-sys-on-surface-variant); }
     .filter-bar {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
       align-items: flex-start;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--mat-sys-surface-container-low, rgba(0, 0, 0, 0.02));
     }
     .search-field { flex: 1 1 240px; min-width: 200px; }
     mat-form-field { min-width: 160px; }
-    .table-container { overflow-x: auto; }
+    .table-container { overflow-x: auto; border-radius: 12px; }
     .users-table { width: 100%; }
     .actions-cell { white-space: nowrap; }
-    .empty-state { text-align: center; padding: 32px; opacity: 0.7; }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      white-space: nowrap;
+    .name-cell { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--mat-sys-primary) 14%, transparent);
+      color: var(--mat-sys-primary);
+      font-size: 0.7rem;
+      font-weight: 700;
     }
-    .role-admin { background: #ffebee; color: #b71c1c; }
-    .role-supportagent { background: #fff3e0; color: #e65100; }
-    .role-customer { background: #e3f2fd; color: #0d47a1; }
-    .status-active { background: #e8f5e9; color: #1b5e20; }
-    .status-inactive { background: #eceff1; color: #37474f; }
   `]
 })
 export class UserListComponent implements OnInit {
@@ -235,6 +264,10 @@ export class UserListComponent implements OnInit {
 
   protected isSelf(user: UserListItem): boolean {
     return this.authService.currentUser()?.id === user.id;
+  }
+
+  protected initials(user: UserListItem): string {
+    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
   }
 
   protected onRoleChange(value: UserRole | undefined): void {

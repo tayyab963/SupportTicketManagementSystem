@@ -23,7 +23,10 @@ import { AgentWorkloadTableComponent } from '../../components/agent-workload-tab
   ],
   template: `
     <div class="dashboard">
-      <h1>Dashboard</h1>
+      <header class="dashboard-header">
+        <h1>Dashboard</h1>
+        <p class="dashboard-subtitle">A live snapshot of ticket volume, priority mix and agent workload.</p>
+      </header>
 
       @if (loading()) {
         <mat-progress-bar mode="indeterminate" />
@@ -35,12 +38,12 @@ import { AgentWorkloadTableComponent } from '../../components/agent-workload-tab
         </mat-card>
       } @else if (summary(); as data) {
         <div class="stat-grid">
-          <app-stat-card label="Total Tickets" [value]="data.totalTickets" icon="confirmation_number" accentColor="#2a78d6" />
-          <app-stat-card label="Open" [value]="data.openTickets" icon="inbox" accentColor="#2a78d6" />
-          <app-stat-card label="In Progress" [value]="data.inProgressTickets" icon="autorenew" accentColor="#eb6834" />
-          <app-stat-card label="Resolved" [value]="data.resolvedTickets" icon="task_alt" accentColor="#1baf7a" />
-          <app-stat-card label="Critical" [value]="data.criticalTickets" icon="priority_high" accentColor="#d03b3b" />
-          <app-stat-card label="Avg. Resolution" [value]="avgResolutionLabel()" icon="schedule" accentColor="#4a3aa7" />
+          <app-stat-card label="Total Tickets" [value]="data.totalTickets" icon="confirmation_number" accentColor="#4f46e5" />
+          <app-stat-card label="Open" [value]="data.openTickets" icon="inbox" accentColor="#4f46e5" />
+          <app-stat-card label="In Progress" [value]="data.inProgressTickets" icon="autorenew" accentColor="#f59e0b" />
+          <app-stat-card label="Resolved" [value]="data.resolvedTickets" icon="task_alt" accentColor="#10b981" />
+          <app-stat-card label="Critical" [value]="data.criticalTickets" icon="priority_high" accentColor="#e11d48" />
+          <app-stat-card label="Avg. Resolution" [value]="avgResolutionLabel()" icon="schedule" accentColor="#9333ea" />
         </div>
 
         <div class="chart-grid">
@@ -75,14 +78,16 @@ import { AgentWorkloadTableComponent } from '../../components/agent-workload-tab
     </div>
   `,
   styles: [`
-    .dashboard { margin: 16px 24px 32px; display: flex; flex-direction: column; gap: 20px; }
-    h1 { margin: 8px 0 0; font-size: 1.5rem; }
+    .dashboard { display: flex; flex-direction: column; gap: 22px; }
+    .dashboard-header { padding: 4px 4px 0; }
+    .dashboard-header h1 { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+    .dashboard-subtitle { margin: 4px 0 0; color: var(--mat-sys-on-surface-variant); font-size: 0.9rem; }
     .placeholder-card { margin: 0; }
     .error-message { color: var(--mat-sys-error); }
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 14px;
+      gap: 16px;
     }
     .chart-grid {
       display: grid;
@@ -105,10 +110,10 @@ export class DashboardComponent implements OnInit {
       return [];
     }
     return [
-      { label: 'Open', value: data.openTickets, color: '#2a78d6' },
-      { label: 'In Progress', value: data.inProgressTickets, color: '#eb6834' },
-      { label: 'Resolved', value: data.resolvedTickets, color: '#1baf7a' },
-      { label: 'Closed', value: data.closedTickets, color: '#898781' }
+      { label: 'Open', value: data.openTickets, color: '#4f46e5' },
+      { label: 'In Progress', value: data.inProgressTickets, color: '#f59e0b' },
+      { label: 'Resolved', value: data.resolvedTickets, color: '#10b981' },
+      { label: 'Closed', value: data.closedTickets, color: '#64748b' }
     ];
   });
 
@@ -118,10 +123,10 @@ export class DashboardComponent implements OnInit {
       return [];
     }
     return [
-      { label: 'Low', value: data.lowPriorityTickets, color: '#898781' },
-      { label: 'Medium', value: data.mediumPriorityTickets, color: '#2a78d6' },
-      { label: 'High', value: data.highPriorityTickets, color: '#eb6834' },
-      { label: 'Critical', value: data.criticalTickets, color: '#d03b3b' }
+      { label: 'Low', value: data.lowPriorityTickets, color: '#64748b' },
+      { label: 'Medium', value: data.mediumPriorityTickets, color: '#4f46e5' },
+      { label: 'High', value: data.highPriorityTickets, color: '#f59e0b' },
+      { label: 'Critical', value: data.criticalTickets, color: '#e11d48' }
     ];
   });
 

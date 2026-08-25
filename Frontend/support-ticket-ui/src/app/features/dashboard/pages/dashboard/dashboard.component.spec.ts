@@ -113,20 +113,20 @@ describe('DashboardComponent', () => {
     it('computes statusSegments as Open/In Progress/Resolved/Closed with the summary counts and colors', () => {
       const segments = (component as any).statusSegments();
       expect(segments).toEqual([
-        { label: 'Open', value: 10, color: '#2a78d6' },
-        { label: 'In Progress', value: 8, color: '#eb6834' },
-        { label: 'Resolved', value: 20, color: '#1baf7a' },
-        { label: 'Closed', value: 12, color: '#898781' }
+        { label: 'Open', value: 10, color: '#4f46e5' },
+        { label: 'In Progress', value: 8, color: '#f59e0b' },
+        { label: 'Resolved', value: 20, color: '#10b981' },
+        { label: 'Closed', value: 12, color: '#64748b' }
       ]);
     });
 
     it('computes prioritySegments as Low/Medium/High/Critical with the summary counts and colors', () => {
       const segments = (component as any).prioritySegments();
       expect(segments).toEqual([
-        { label: 'Low', value: 15, color: '#898781' },
-        { label: 'Medium', value: 20, color: '#2a78d6' },
-        { label: 'High', value: 12, color: '#eb6834' },
-        { label: 'Critical', value: 3, color: '#d03b3b' }
+        { label: 'Low', value: 15, color: '#64748b' },
+        { label: 'Medium', value: 20, color: '#4f46e5' },
+        { label: 'High', value: 12, color: '#f59e0b' },
+        { label: 'Critical', value: 3, color: '#e11d48' }
       ]);
     });
 

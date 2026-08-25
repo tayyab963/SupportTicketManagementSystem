@@ -1,40 +1,90 @@
-<mat-toolbar color="primary">
-  @if (authService.isAuthenticated()) {
-    <button mat-icon-button [matMenuTriggerFor]="navMenu" aria-label="Navigation menu">
-      <mat-icon>menu</mat-icon>
-    </button>
-    <mat-menu #navMenu="matMenu">
-      <a mat-menu-item routerLink="/tickets" routerLinkActive="active-menu-item">
-        <mat-icon>confirmation_number</mat-icon>
-        Tickets
-      </a>
-      @if (authService.hasRole(UserRole.Admin)) {
-        <a mat-menu-item routerLink="/dashboard" routerLinkActive="active-menu-item">
-          <mat-icon>dashboard</mat-icon>
-          Dashboard
-        </a>
-        <a mat-menu-item routerLink="/users" routerLinkActive="active-menu-item">
-          <mat-icon>group</mat-icon>
-          Users
-        </a>
-      }
-      <a mat-menu-item routerLink="/profile" routerLinkActive="active-menu-item">
-        <mat-icon>person</mat-icon>
-        Profile
-      </a>
-    </mat-menu>
-  }
+<header class="app-header">
+  <mat-toolbar color="primary">
+    <a class="brand" routerLink="/tickets">
+      <span class="brand-mark">
+        <mat-icon>support_agent</mat-icon>
+      </span>
+      <span class="brand-name">{{ title }}</span>
+    </a>
 
-  <span>{{ title }}</span>
-  <span class="spacer"></span>
-  @if (authService.currentUser(); as user) {
-    <span class="user-info">{{ user.firstName }} {{ user.lastName }} &middot; {{ user.role }}</span>
-    <button mat-button (click)="logout()">
-      <mat-icon>logout</mat-icon>
-      Logout
+    @if (authService.isAuthenticated()) {
+      <nav class="primary-nav">
+        <a class="nav-link" routerLink="/tickets" routerLinkActive="active">
+          <mat-icon>confirmation_number</mat-icon>
+          <span>Tickets</span>
+        </a>
+        @if (authService.hasRole(UserRole.Admin)) {
+          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
+            <mat-icon>dashboard</mat-icon>
+            <span>Dashboard</span>
+          </a>
+          <a class="nav-link" routerLink="/users" routerLinkActive="active">
+            <mat-icon>group</mat-icon>
+            <span>Users</span>
+          </a>
+        }
+      </nav>
+    }
+
+    <span class="spacer"></span>
+
+    <button
+      mat-icon-button
+      type="button"
+      class="theme-toggle"
+      (click)="themeService.toggle()"
+      [attr.aria-label]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+    >
+      <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
-  }
-</mat-toolbar>
+
+    @if (authService.isAuthenticated()) {
+      @if (authService.currentUser(); as user) {
+        <button class="user-chip" type="button" [matMenuTriggerFor]="userMenu">
+          <span class="avatar">{{ initials }}</span>
+          <span class="user-meta">
+            <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+            <span class="user-role">{{ user.role }}</span>
+          </span>
+          <mat-icon class="chevron">expand_more</mat-icon>
+        </button>
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <div class="menu-user-header">
+            <span class="avatar">{{ initials }}</span>
+            <span class="user-meta">
+              <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+              <span class="user-role">{{ user.role }}</span>
+            </span>
+          </div>
+          <button mat-menu-item type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            Logout
+          </button>
+        </mat-menu>
+      }
+
+      <button mat-icon-button class="mobile-nav-toggle" [matMenuTriggerFor]="mobileMenu" aria-label="Navigation menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <mat-menu #mobileMenu="matMenu">
+        <a mat-menu-item routerLink="/tickets" routerLinkActive="active-menu-item">
+          <mat-icon>confirmation_number</mat-icon>
+          Tickets
+        </a>
+        @if (authService.hasRole(UserRole.Admin)) {
+          <a mat-menu-item routerLink="/dashboard" routerLinkActive="active-menu-item">
+            <mat-icon>dashboard</mat-icon>
+            Dashboard
+          </a>
+          <a mat-menu-item routerLink="/users" routerLinkActive="active-menu-item">
+            <mat-icon>group</mat-icon>
+            Users
+          </a>
+        }
+      </mat-menu>
+    }
+  </mat-toolbar>
+</header>
 
 <main class="app-content">
   <router-outlet />

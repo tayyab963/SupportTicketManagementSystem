@@ -28,12 +28,12 @@ interface BarRow extends ChartSegment {
     </div>
   `,
   styles: [`
-    .bar-chart { display: flex; flex-direction: column; gap: 12px; }
-    .bar-row { display: grid; grid-template-columns: 90px 1fr 40px; align-items: center; gap: 10px; }
-    .bar-label { font-size: 0.85rem; opacity: 0.8; }
-    .bar-track { height: 18px; border-radius: 9px; background: var(--mat-sys-surface-variant, #eceff1); overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 9px; min-width: 3px; transition: width 0.2s ease; }
-    .bar-value { font-size: 0.85rem; font-variant-numeric: tabular-nums; text-align: right; }
+    .bar-chart { display: flex; flex-direction: column; gap: 16px; }
+    .bar-row { display: grid; grid-template-columns: 90px 1fr 40px; align-items: center; gap: 12px; }
+    .bar-label { font-size: 0.85rem; font-weight: 500; opacity: 0.85; }
+    .bar-track { height: 20px; border-radius: 10px; background: var(--mat-sys-surface-container-highest, #eceff1); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 10px; min-width: 3px; transition: width 0.3s ease; }
+    .bar-value { font-size: 0.85rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
     .empty-state { opacity: 0.6; margin: 0; }
   `]
 })

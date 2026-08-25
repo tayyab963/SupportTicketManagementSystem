@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [MatIconModule],
   template: `
     <div class="stat-card">
+      <span class="stat-accent" [style.background]="accentColor"></span>
       <div class="stat-icon" [style.background]="accentColor + '1a'" [style.color]="accentColor">
         <mat-icon>{{ icon }}</mat-icon>
       </div>
@@ -19,20 +20,35 @@ import { MatIconModule } from '@angular/material/icon';
   `,
   styles: [`
     .stat-card {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 14px;
-      padding: 16px 18px;
-      border-radius: 12px;
-      background: var(--mat-sys-surface-container, #fff);
-      border: 1px solid rgba(11, 11, 11, 0.08);
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: var(--mat-sys-surface-container-low, #fff);
+      border: 1px solid var(--mat-sys-outline-variant);
+      box-shadow: 0 1px 2px rgba(15, 15, 25, 0.04), 0 8px 24px -14px rgba(15, 15, 25, 0.16);
       min-width: 0;
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 4px rgba(15, 15, 25, 0.06), 0 16px 32px -16px rgba(15, 15, 25, 0.24);
+    }
+    .stat-accent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
     }
     .stat-icon {
       flex-shrink: 0;
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -43,8 +59,9 @@ import { MatIconModule } from '@angular/material/icon';
       min-width: 0;
     }
     .stat-value {
-      font-size: 1.6rem;
-      font-weight: 600;
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
       line-height: 1.2;
     }
     .stat-label {
@@ -60,5 +77,5 @@ export class StatCardComponent {
   @Input({ required: true }) label!: string;
   @Input({ required: true }) value!: string | number;
   @Input({ required: true }) icon!: string;
-  @Input() accentColor = '#2a78d6';
+  @Input() accentColor = '#4f46e5';
 }

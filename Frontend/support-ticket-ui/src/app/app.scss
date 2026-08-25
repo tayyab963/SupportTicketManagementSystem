@@ -1,5 +1,85 @@
-.app-content {
-  padding: 16px;
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(15, 15, 25, 0.08), 0 4px 16px -8px rgba(15, 15, 25, 0.12);
+}
+
+mat-toolbar {
+  gap: 6px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.brand-mark mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.brand-name {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.primary-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 12px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.85;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.nav-link mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.nav-link:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-link.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .spacer {
@@ -7,29 +87,119 @@
   min-width: 8px;
 }
 
-.user-info {
-  margin-right: 8px;
-  font-size: 0.875rem;
-  opacity: 0.9;
-  white-space: nowrap;
+.theme-toggle {
+  flex-shrink: 0;
 }
 
-mat-toolbar {
-  gap: 4px;
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  margin-left: 4px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 0.15s ease;
 }
 
-/* Flex items default to min-width: auto, which refuses to shrink below content size and pushes
-   the toolbar (and the whole page) wider than the viewport on narrow screens — min-width: 0 lets
-   the title actually shrink/ellipsize instead. */
-mat-toolbar > span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.user-chip:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--mat-sys-tertiary, #9c2b5f), var(--mat-sys-primary, #6247aa));
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
   min-width: 0;
 }
 
-@media (max-width: 600px) {
-  .user-info {
+.user-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.user-role {
+  font-size: 0.6875rem;
+  opacity: 0.75;
+}
+
+.chevron {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  opacity: 0.8;
+}
+
+.mobile-nav-toggle {
+  display: none;
+}
+
+.menu-user-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 12px;
+}
+
+.menu-user-header .user-name {
+  color: var(--mat-sys-on-surface);
+  max-width: 180px;
+}
+
+.menu-user-header .user-role {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.app-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+@media (max-width: 767px) {
+  .primary-nav {
+    display: none;
+  }
+
+  .mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  .user-meta {
+    display: none;
+  }
+
+  .user-chip {
+    padding: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-name {
     display: none;
   }
 }

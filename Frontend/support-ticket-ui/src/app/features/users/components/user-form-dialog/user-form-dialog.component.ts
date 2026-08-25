@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
@@ -24,13 +25,17 @@ export interface UserFormDialogData {
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
     MatProgressSpinnerModule
   ],
   template: `
-    <h2 mat-dialog-title>{{ isEdit ? 'Edit User' : 'New User' }}</h2>
+    <h2 mat-dialog-title class="dialog-title">
+      <span class="dialog-icon"><mat-icon>{{ isEdit ? 'edit' : 'person_add' }}</mat-icon></span>
+      {{ isEdit ? 'Edit User' : 'New User' }}
+    </h2>
 
     <form [formGroup]="form" (ngSubmit)="submit()">
       <mat-dialog-content class="form-content">
@@ -91,7 +96,20 @@ export interface UserFormDialogData {
     </form>
   `,
   styles: [`
-    .form-content { display: flex; flex-direction: column; gap: 4px; min-width: 340px; }
+    .dialog-title { display: flex; align-items: center; gap: 12px; }
+    .dialog-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+      color: var(--mat-sys-primary);
+    }
+    .dialog-icon mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    .form-content { display: flex; flex-direction: column; gap: 4px; min-width: 340px; margin-top: 8px; }
     .name-row { display: flex; gap: 12px; }
     .name-row mat-form-field { flex: 1 1 0; }
     .error-message { color: var(--mat-sys-error); margin: 0 0 8px; font-size: 0.875rem; }

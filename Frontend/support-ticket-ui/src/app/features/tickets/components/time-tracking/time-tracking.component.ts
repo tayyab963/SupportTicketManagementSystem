@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -27,6 +28,7 @@ import { TicketService } from '../../../../core/services/ticket.service';
     MatButtonModule,
     MatDatepickerModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
@@ -34,14 +36,17 @@ import { TicketService } from '../../../../core/services/ticket.service';
   ],
   template: `
     <section class="time-tracking-section">
-      <h3>Time Tracking</h3>
+      <h3><mat-icon>schedule</mat-icon>Time Tracking</h3>
 
       @if (loading()) {
         <mat-progress-spinner diameter="24" mode="indeterminate" />
       } @else if (loadError()) {
         <p class="error-message">{{ loadError() }}</p>
       } @else if (summary(); as summary) {
-        <p class="total-time">Total Time: {{ formatDuration(summary.totalDurationMinutes) }}</p>
+        <p class="total-time">
+          <mat-icon>timer</mat-icon>
+          Total Time: <strong>{{ formatDuration(summary.totalDurationMinutes) }}</strong>
+        </p>
 
         @if (summary.entries.length === 0) {
           <p class="empty-state">No time logged yet.</p>
@@ -96,10 +101,24 @@ import { TicketService } from '../../../../core/services/ticket.service';
     </section>
   `,
   styles: [`
-    .time-tracking-section h3 { margin: 0 0 8px; font-size: 0.95rem; }
-    .total-time { font-weight: 500; margin: 0 0 12px; }
-    .simple-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-    .simple-table th, .simple-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--mat-sys-outline-variant); font-size: 0.875rem; }
+    .time-tracking-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 0.95rem; font-weight: 600; }
+    .time-tracking-section h3 mat-icon { font-size: 18px; width: 18px; height: 18px; opacity: 0.7; }
+    .total-time {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      margin: 0 0 14px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--mat-sys-primary) 10%, transparent);
+      color: var(--mat-sys-primary);
+      font-size: 0.85rem;
+    }
+    .total-time mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .simple-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; border-radius: 12px; overflow: hidden; }
+    .simple-table th { text-align: left; padding: 8px 10px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--mat-sys-on-surface-variant); background: var(--mat-sys-surface-container-low); }
+    .simple-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--mat-sys-outline-variant); font-size: 0.875rem; }
     .time-entry-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
     .minutes-field { max-width: 120px; }
     .description-field { flex: 1 1 200px; }

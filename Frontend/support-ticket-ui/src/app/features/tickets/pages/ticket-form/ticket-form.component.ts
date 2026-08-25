@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
@@ -20,6 +21,7 @@ import { TicketService } from '../../../../core/services/ticket.service';
     ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
@@ -28,7 +30,8 @@ import { TicketService } from '../../../../core/services/ticket.service';
   ],
   template: `
     <mat-card class="form-card">
-      <mat-card-header>
+      <mat-card-header class="form-header">
+        <span class="header-icon"><mat-icon>{{ ticketId() ? 'edit_note' : 'add_circle' }}</mat-icon></span>
         <mat-card-title>{{ ticketId() ? 'Edit Ticket' : 'New Ticket' }}</mat-card-title>
       </mat-card-header>
 
@@ -85,7 +88,19 @@ import { TicketService } from '../../../../core/services/ticket.service';
   `,
   styles: [`
     .form-card { max-width: 640px; margin: 24px auto; }
-    .ticket-form { display: flex; flex-direction: column; gap: 4px; }
+    .form-header { display: flex; align-items: center; gap: 12px; }
+    .header-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+      color: var(--mat-sys-primary);
+    }
+    .ticket-form { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
     .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
     .error-message { color: var(--mat-sys-error); margin: 0 0 8px; font-size: 0.875rem; }
     .loading-spinner { margin: 32px auto; }

@@ -23,6 +23,8 @@ import { TicketPriority, TicketStatus, UserRole } from '../../../../core/models/
 import { PagedResult } from '../../../../core/models/paged-result.model';
 import { TicketListItem, TicketQueryParams, TicketSortBy } from '../../../../core/models/ticket.model';
 import { UserSummary } from '../../../../core/models/user.model';
+import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 
 interface SortOption {
   value: TicketSortBy;
@@ -46,12 +48,20 @@ interface SortOption {
     MatPaginatorModule,
     MatProgressBarModule,
     MatTooltipModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    BadgeComponent,
+    EmptyStateComponent
   ],
   template: `
     <mat-card class="list-card">
       <mat-card-header class="list-header">
-        <mat-card-title>Tickets</mat-card-title>
+        <div class="header-title">
+          <span class="header-icon"><mat-icon>confirmation_number</mat-icon></span>
+          <div>
+            <mat-card-title>Tickets</mat-card-title>
+            <p class="header-subtitle">Browse, filter and track every support ticket.</p>
+          </div>
+        </div>
         @if (authService.hasRole(UserRole.Customer)) {
           <a mat-flat-button color="primary" routerLink="create">
             <mat-icon>add</mat-icon>
@@ -139,14 +149,14 @@ interface SortOption {
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef>Status</th>
               <td mat-cell *matCellDef="let ticket">
-                <span class="badge status-{{ ticket.status.toLowerCase() }}">{{ ticket.status }}</span>
+                <app-badge variant="status" [value]="ticket.status" />
               </td>
             </ng-container>
 
             <ng-container matColumnDef="priority">
               <th mat-header-cell *matHeaderCellDef>Priority</th>
               <td mat-cell *matCellDef="let ticket">
-                <span class="badge priority-{{ ticket.priority.toLowerCase() }}">{{ ticket.priority }}</span>
+                <app-badge variant="priority" [value]="ticket.priority" />
               </td>
             </ng-container>
 
@@ -175,7 +185,7 @@ interface SortOption {
           </table>
 
           @if (!loading() && items().length === 0) {
-            <p class="empty-state">No tickets match the current filters.</p>
+            <app-empty-state icon="confirmation_number" message="No tickets match the current filters." />
           }
         </div>
 
@@ -190,46 +200,45 @@ interface SortOption {
     </mat-card>
   `,
   styles: [`
-    .list-card { margin: 16px; }
+    .list-card { margin: 0; }
     .list-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       width: 100%;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-    .list-header ::ng-deep .mat-mdc-card-header-text { flex: 1 1 auto; }
+    .header-title { display: flex; align-items: center; gap: 12px; }
+    .header-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+      color: var(--mat-sys-primary);
+    }
+    .header-subtitle { margin: 2px 0 0; font-size: 0.8125rem; color: var(--mat-sys-on-surface-variant); }
     .filter-bar {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
       align-items: flex-start;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--mat-sys-surface-container-low, rgba(0, 0, 0, 0.02));
     }
     .search-field { flex: 1 1 240px; min-width: 200px; }
     mat-form-field { min-width: 160px; }
-    .table-container { overflow-x: auto; }
+    .table-container { overflow-x: auto; border-radius: 12px; }
     .tickets-table { width: 100%; }
     .ticket-row { cursor: pointer; }
-    .ticket-row:hover { background: var(--mat-sys-surface-variant); }
-    .title-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .empty-state { text-align: center; padding: 32px; opacity: 0.7; }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    .status-open { background: #e3f2fd; color: #0d47a1; }
-    .status-inprogress { background: #fff3e0; color: #e65100; }
-    .status-resolved { background: #e8f5e9; color: #1b5e20; }
-    .status-closed { background: #eceff1; color: #37474f; }
-    .priority-low { background: #eceff1; color: #37474f; }
-    .priority-medium { background: #e3f2fd; color: #0d47a1; }
-    .priority-high { background: #fff3e0; color: #e65100; }
-    .priority-critical { background: #ffebee; color: #b71c1c; }
+    .ticket-row:hover { background: var(--mat-sys-surface-container-low); }
+    .title-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
   `]
 })
 export class TicketListComponent implements OnInit {
